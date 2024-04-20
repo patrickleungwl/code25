@@ -1,0 +1,17 @@
+site_name: Code
+theme:
+  name: material
+  palette:
+    primary: blue grey
+    accent: yellow
+  font: 
+    text: IBM Plex Serif
+    code: Roboto Mono, 10
+markdown_extensions:
+  - pymdownx.highlight:
+      pygments_style: 'bw'
+      noclasses: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - pymdownx.tabbed
