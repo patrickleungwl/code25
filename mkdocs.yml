@@ -1,12 +1,15 @@
-site_name: Code
+site_name: ThinkCode
 theme:
   name: material
   palette:
-    primary: blue grey
-    accent: yellow
+    primary: deep purple
+    accent: light green
+    scheme: slate
+    toggle:
+      icon: material/brightness-4
   font: 
     text: IBM Plex Serif
-    code: Roboto Mono, 10
+    code: IBM Plex Mono
 markdown_extensions:
   - pymdownx.highlight:
       pygments_style: 'bw'
