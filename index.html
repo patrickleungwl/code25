@@ -481,22 +481,24 @@ combined copy assignment and move assignment.  Runtime output is shown as well.<
 <span style="font-style: italic">// move assignment operator</span>
 
 <span style="font-weight: bold">static</span> <span style="font-weight: bold">void</span> log(<span style="font-weight: bold">const</span> <span style="font-weight: bold">char</span> *msg) { std::cout &lt;&lt; msg &lt;&lt; <span style="font-style: italic">&#39;\n&#39;</span>; } <span style="font-style: italic">// reduce noise</span>
+<span style="font-weight: bold">static</span> <span style="font-weight: bold">void</span> log(<span style="font-weight: bold">char</span> id, <span style="font-weight: bold">const</span> <span style="font-weight: bold">char</span> *msg) { std::cout &lt;&lt; <span style="font-style: italic">&#39; &#39;</span> &lt;&lt; msg &lt;&lt; <span style="font-style: italic">&#39; &#39;</span> &lt;&lt; id &lt;&lt; <span style="font-style: italic">&#39;\n&#39;</span>; } <span style="font-style: italic">// reduce noise</span>
 
 <span style="font-weight: bold">class</span> <span style="font-weight: bold">Thing</span> {
-    <span style="font-weight: bold">int</span>* t; <span style="font-style: italic">// just example, would never do this in production code</span>
+    <span style="font-weight: bold">char</span>* t; <span style="font-style: italic">// just example, would never do this in production code</span>
+            <span style="font-style: italic">//</span>
 
  <span style="font-weight: bold">public</span>:
-    Thing()      : t(<span style="font-weight: bold">new</span> <span style="font-weight: bold">int</span>(0))    { log(<span style="font-style: italic">&quot;ctr&quot;</span>); }
-    Thing(<span style="font-weight: bold">int</span> i) : t(<span style="font-weight: bold">new</span> <span style="font-weight: bold">int</span>(i))    { log(<span style="font-style: italic">&quot;ctr_p&quot;</span>); }
-    ~Thing()                        { <span style="font-weight: bold">delete</span> t; log(<span style="font-style: italic">&quot;dtr&quot;</span>); };
+    Thing()       : t(<span style="font-weight: bold">new</span> <span style="font-weight: bold">char</span>(<span style="font-style: italic">&#39; &#39;</span>))    { log(*t, <span style="font-style: italic">&quot;ctr&quot;</span>); }
+    Thing(<span style="font-weight: bold">char</span> c) : t(<span style="font-weight: bold">new</span> <span style="font-weight: bold">char</span>(c))      { log(*t, <span style="font-style: italic">&quot;ctr_p&quot;</span>); }
+    ~Thing()                            { log(*t, <span style="font-style: italic">&quot;dtr&quot;</span>); <span style="font-weight: bold">delete</span> t; };
 
     <span style="font-style: italic">// copy ctr</span>
-    Thing(<span style="font-weight: bold">const</span> Thing&amp; other) : t(<span style="font-weight: bold">new</span> <span style="font-weight: bold">int</span>(*other.t)) { log(<span style="font-style: italic">&quot;copy ctr&quot;</span>); }
+    Thing(<span style="font-weight: bold">const</span> Thing&amp; other) : t(<span style="font-weight: bold">new</span> <span style="font-weight: bold">char</span>(*other.t)) { log(*t, <span style="font-style: italic">&quot;copy ctr&quot;</span>); }
 
     <span style="font-style: italic">// copy assignment using CAS, notice use of copy ctr in parameter</span>
     Thing&amp; <span style="font-weight: bold">operator</span>=(Thing other)   {
         std::swap(t, other.t);  <span style="font-style: italic">// other was just created by copy ctr</span>
-        log(<span style="font-style: italic">&quot;copy assignment&quot;</span>);
+        log(*t, <span style="font-style: italic">&quot;copy assignment&quot;</span>);
         <span style="font-weight: bold">return</span> *<span style="font-weight: bold">this</span>;
     }
 
@@ -504,7 +506,7 @@ combined copy assignment and move assignment.  Runtime output is shown as well.<
     Thing(Thing&amp;&amp; other) <span style="font-weight: bold">noexcept</span> :  <span style="font-style: italic">// noexcept for optimisation</span>
         t(other.t) {        <span style="font-style: italic">// steal the other&#39;s innards</span>
         other.t = <span style="font-weight: bold">nullptr</span>;  <span style="font-style: italic">// leave the other&#39;s blank</span>
-        log(<span style="font-style: italic">&quot;move ctr&quot;</span>);
+        log(*t, <span style="font-style: italic">&quot;move ctr&quot;</span>);
     }
 
     <span style="font-style: italic">// move assignment</span>
@@ -527,38 +529,45 @@ combined copy assignment and move assignment.  Runtime output is shown as well.<
 
 Thing get_thing() {
     log(<span style="font-style: italic">&quot;creating b&quot;</span>);
-    Thing b(2);
+    Thing b(<span style="font-style: italic">&#39;b&#39;</span>);
     <span style="font-weight: bold">return</span> b; 
 }
 
 <span style="font-weight: bold">int</span> main() {
+    log(<span style="font-style: italic">&quot;*** first test ***&quot;</span>);
     log(<span style="font-style: italic">&quot;creating a&quot;</span>);
-    Thing a(1);
-    log(<span style="font-style: italic">&quot;returning b to a, overwrite a&quot;</span>);
+    Thing a(<span style="font-style: italic">&#39;a&#39;</span>);
+    log(<span style="font-style: italic">&quot;returning b as a temporary rvalue to a, overwrite a with move assignment&quot;</span>);
     a = get_thing();
 
+    log(<span style="font-style: italic">&quot;*** second test ***&quot;</span>);
     log(<span style="font-style: italic">&quot;creating c&quot;</span>);
-    Thing c(1);
-    log(<span style="font-style: italic">&quot;copying c to a, overwrite a with copy assignment&quot;</span>);
+    Thing c(<span style="font-style: italic">&#39;c&#39;</span>);
+    log(<span style="font-style: italic">&quot;copying c as an lvalue to a, overwrite a with copy assignment&quot;</span>);
     a = c;
-}
 
-<span style="font-style: italic">// output:</span>
-<span style="font-style: italic">// creating a</span>
-<span style="font-style: italic">// ctr_p</span>
-<span style="font-style: italic">// returning b to a, overwrite a</span>
-<span style="font-style: italic">// creating b</span>
-<span style="font-style: italic">// ctr_p</span>
-<span style="font-style: italic">// copy assignment</span>
-<span style="font-style: italic">// dtr</span>
-<span style="font-style: italic">// creating c</span>
-<span style="font-style: italic">// ctr_p</span>
-<span style="font-style: italic">// copying c to a, overwrite a with copy assignment</span>
-<span style="font-style: italic">// copy ctr</span>
-<span style="font-style: italic">// copy assignment</span>
-<span style="font-style: italic">// dtr</span>
-<span style="font-style: italic">// dtr</span>
-<span style="font-style: italic">// dtr</span>
+    log(<span style="font-style: italic">&quot;end of test&quot;</span>);
+}
+</code></pre></div>
+<p>And the output:</p>
+<div class="highlight" style="background: #ffffff"><pre style="line-height: 125%;"><span></span><code>*** first test ***
+creating a
+ ctr_p a
+returning b as a temporary rvalue to a, overwrite a with move assignment
+creating b
+ ctr_p b
+ copy assignment b
+ dtr a
+*** second test ***
+creating c
+ ctr_p c
+copying c as an lvalue to a, overwrite a with copy assignment
+ copy ctr c
+ copy assignment c
+ dtr b
+end of test
+ dtr c
+ dtr c
 </code></pre></div>
 
 

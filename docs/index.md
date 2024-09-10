@@ -51,7 +51,6 @@ Below is a sample implementation of a canoncial c++ class with CAS for its
 combined copy assignment and move assignment.  Runtime output is shown as well.
 
 ~~~cpp
-
 #include <iostream>
 
 // canonical class in c++
@@ -67,22 +66,24 @@ combined copy assignment and move assignment.  Runtime output is shown as well.
 // move assignment operator
 
 static void log(const char *msg) { std::cout << msg << '\n'; } // reduce noise
+static void log(char id, const char *msg) { std::cout << ' ' << msg << ' ' << id << '\n'; } // reduce noise
 
 class Thing {
-    int* t; // just example, would never do this in production code
+    char* t; // just example, would never do this in production code
+            //
  
  public:
-    Thing()      : t(new int(0))    { log("ctr"); }
-    Thing(int i) : t(new int(i))    { log("ctr_p"); }
-    ~Thing()                        { delete t; log("dtr"); };
+    Thing()       : t(new char(' '))    { log(*t, "ctr"); }
+    Thing(char c) : t(new char(c))      { log(*t, "ctr_p"); }
+    ~Thing()                            { log(*t, "dtr"); delete t; };
 
     // copy ctr
-    Thing(const Thing& other) : t(new int(*other.t)) { log("copy ctr"); }
+    Thing(const Thing& other) : t(new char(*other.t)) { log(*t, "copy ctr"); }
 
     // copy assignment using CAS, notice use of copy ctr in parameter
     Thing& operator=(Thing other)   {
         std::swap(t, other.t);  // other was just created by copy ctr
-        log("copy assignment");
+        log(*t, "copy assignment");
         return *this;
     }
 
@@ -90,7 +91,7 @@ class Thing {
     Thing(Thing&& other) noexcept :  // noexcept for optimisation
         t(other.t) {        // steal the other's innards
         other.t = nullptr;  // leave the other's blank
-        log("move ctr");
+        log(*t, "move ctr");
     }
 
     // move assignment
@@ -113,37 +114,48 @@ class Thing {
 
 Thing get_thing() {
     log("creating b");
-    Thing b(2);
+    Thing b('b');
     return b; 
 }
 
 int main() {
+    log("*** first test ***");
     log("creating a");
-    Thing a(1);
-    log("returning b to a, overwrite a");
+    Thing a('a');
+    log("returning b as a temporary rvalue to a, overwrite a with move assignment");
     a = get_thing();
 
+    log("*** second test ***");
     log("creating c");
-    Thing c(1);
-    log("copying c to a, overwrite a with copy assignment");
+    Thing c('c');
+    log("copying c as an lvalue to a, overwrite a with copy assignment");
     a = c;
+
+    log("end of test");
 }
 
-// output:
-// creating a
-// ctr_p
-// returning b to a, overwrite a
-// creating b
-// ctr_p
-// copy assignment
-// dtr
-// creating c
-// ctr_p
-// copying c to a, overwrite a with copy assignment
-// copy ctr
-// copy assignment
-// dtr
-// dtr
-// dtr
+~~~
+
+And the output:
 
 ~~~
+*** first test ***
+creating a
+ ctr_p a
+returning b as a temporary rvalue to a, overwrite a with move assignment
+creating b
+ ctr_p b
+ copy assignment b
+ dtr a
+*** second test ***
+creating c
+ ctr_p c
+copying c as an lvalue to a, overwrite a with copy assignment
+ copy ctr c
+ copy assignment c
+ dtr b
+end of test
+ dtr c
+ dtr c
+~~~
+
