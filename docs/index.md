@@ -39,7 +39,7 @@ its signature like this:
 	Thing& operator=(Thing other);   	// copy assignment
 	Thing& operator=(Thing&& other);	// move assignment
 
-This immediately confused the compiler because an rvalue could qualify for 
+This immediately confused the compiler because an rvalue could bind with
 both methods.  
 
 ### Solution

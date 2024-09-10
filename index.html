@@ -459,7 +459,7 @@ its signature like this:</p>
 <div class="highlight" style="background: #ffffff"><pre style="line-height: 125%;"><span></span><code>Thing&amp; operator=(Thing other);      // copy assignment
 Thing&amp; operator=(Thing&amp;&amp; other);    // move assignment
 </code></pre></div>
-<p>This immediately confused the compiler because an rvalue could qualify for 
+<p>This immediately confused the compiler because an rvalue could bind with 
 both methods.  </p>
 <h3 id="solution">Solution</h3>
 <p>The solution is to remove the move assignment implementation.  Both lvalues 
