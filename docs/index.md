@@ -95,22 +95,6 @@ class Thing {
         log(*t, "move ctr");
     }
 
-    // move assignment
-    // Thing& operator=(Thing&& other) noexcept {
-    //      this fails compiling with a ambigious overload for
-    //      operator=, because rvalue fits for both the copy assignment
-    //      operator and the move assignment.
-    // }
-    //
-    // Thing& operator=(Thing);   // Lead to ambiguous call
-    // Thing& operator=(Thing&&); // Lead to ambiguous call
-    //
-    //  to fix- do this:
-    //  Thing& operator=(Thing);
-    //
-    //  or
-    //  Thing& operator=(const Thing&);
-    //  Thing& operator=(Thing&&);
 };
 
 Thing get_thing() {
@@ -159,4 +143,27 @@ end of test
  dtr c
  dtr c
 ~~~
+
+## Discussion
+
+*** Update in progress ***
+
+1. Resource leaks?  Show valgrind output.
+2. Less repetitive code.  Fewer steps with CAS.
+
+ 
+    //      this fails compiling with a ambigious overload for
+    //      operator=, because rvalue fits for both the copy assignment
+    //      operator and the move assignment.
+    // }
+    //
+    // Thing& operator=(Thing);   // Lead to ambiguous call
+    // Thing& operator=(Thing&&); // Lead to ambiguous call
+    //
+    //  to fix- do this:
+    //  Thing& operator=(Thing);
+    //
+    //  or
+    //  Thing& operator=(const Thing&);
+    //  Thing& operator=(Thing&&);
 

@@ -280,6 +280,15 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#discussion" class="md-nav__link">
+    <span class="md-ellipsis">
+      Discussion
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -417,6 +426,15 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#discussion" class="md-nav__link">
+    <span class="md-ellipsis">
+      Discussion
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -510,22 +528,6 @@ output is shown as well.</p>
         log(*t, <span style="font-style: italic">&quot;move ctr&quot;</span>);
     }
 
-    <span style="font-style: italic">// move assignment</span>
-    <span style="font-style: italic">// Thing&amp; operator=(Thing&amp;&amp; other) noexcept {</span>
-    <span style="font-style: italic">//      this fails compiling with a ambigious overload for</span>
-    <span style="font-style: italic">//      operator=, because rvalue fits for both the copy assignment</span>
-    <span style="font-style: italic">//      operator and the move assignment.</span>
-    <span style="font-style: italic">// }</span>
-    <span style="font-style: italic">//</span>
-    <span style="font-style: italic">// Thing&amp; operator=(Thing);   // Lead to ambiguous call</span>
-    <span style="font-style: italic">// Thing&amp; operator=(Thing&amp;&amp;); // Lead to ambiguous call</span>
-    <span style="font-style: italic">//</span>
-    <span style="font-style: italic">//  to fix- do this:</span>
-    <span style="font-style: italic">//  Thing&amp; operator=(Thing);</span>
-    <span style="font-style: italic">//</span>
-    <span style="font-style: italic">//  or</span>
-    <span style="font-style: italic">//  Thing&amp; operator=(const Thing&amp;);</span>
-    <span style="font-style: italic">//  Thing&amp; operator=(Thing&amp;&amp;);</span>
 };
 
 Thing get_thing() {
@@ -570,6 +572,28 @@ end of test
  dtr c
  dtr c
 </code></pre></div>
+<h2 id="discussion">Discussion</h2>
+<p>*** Update in progress ***</p>
+<ol>
+<li>Resource leaks?  Show valgrind output.</li>
+<li>
+<p>Less repetitive code.  Fewer steps with CAS.</p>
+<p>//      this fails compiling with a ambigious overload for
+//      operator=, because rvalue fits for both the copy assignment
+//      operator and the move assignment.
+// }
+//
+// Thing&amp; operator=(Thing);   // Lead to ambiguous call
+// Thing&amp; operator=(Thing&amp;&amp;); // Lead to ambiguous call
+//
+//  to fix- do this:
+//  Thing&amp; operator=(Thing);
+//
+//  or
+//  Thing&amp; operator=(const Thing&amp;);
+//  Thing&amp; operator=(Thing&amp;&amp;);</p>
+</li>
+</ol>
 
 
 
