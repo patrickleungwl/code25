@@ -459,13 +459,14 @@ its signature like this:</p>
 <div class="highlight" style="background: #ffffff"><pre style="line-height: 125%;"><span></span><code>Thing&amp; operator=(Thing other);      // copy assignment
 Thing&amp; operator=(Thing&amp;&amp; other);    // move assignment
 </code></pre></div>
-<p>This immediately confused the compiler because an rvalue could bind with 
+<p>This immediately confused the compiler because an rvalue could bind with
 both methods.  </p>
 <h3 id="solution">Solution</h3>
-<p>The solution is to remove the move assignment implementation.  Both lvalues 
+<p>One solution is to remove the move assignment implementation.  Both lvalues 
 and rvalues would work with the CAS-version of the copy assignment.</p>
 <p>Below is a sample implementation of a canoncial c++ class with CAS for its
-combined copy assignment and move assignment.  Runtime output is shown as well.</p>
+single copy assignment that works with both rvalues and lvalues.  The runtime 
+output is shown as well.</p>
 <div class="highlight" style="background: #ffffff"><pre style="line-height: 125%;"><span></span><code><span style="font-style: italic">#include</span> <span style="font-style: italic">&lt;iostream&gt;</span>
 
 <span style="font-style: italic">// canonical class in c++</span>

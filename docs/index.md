@@ -44,11 +44,12 @@ both methods.
 
 ### Solution
 
-The solution is to remove the move assignment implementation.  Both lvalues 
+One solution is to remove the move assignment implementation.  Both lvalues 
 and rvalues would work with the CAS-version of the copy assignment.
 
 Below is a sample implementation of a canoncial c++ class with CAS for its
-combined copy assignment and move assignment.  Runtime output is shown as well.
+single copy assignment that works with both rvalues and lvalues.  The runtime 
+output is shown as well.
 
 ~~~cpp
 #include <iostream>
