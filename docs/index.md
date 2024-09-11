@@ -7,25 +7,31 @@ tags: canonical
 archive: true
 ---
 
+Let's discuss the issue in brief.
+
 ## Canonical C++ Class
 
 For a c++ class that manages its own acquired resource (think memory or file 
-handles), the class should contain its own version of ctr, dtr, copy ctr and 
+handles), the class should implement its own version of ctr, dtr, copy ctr and 
 copy assignment.  Since c++ 2010, this list includes move ctr and move 
-assignment.  This is all fine.  
+assignment.  This is all standard best practices.
 
 ### Noisy copy assignment
 
 One slight annoyance I noticed is that the the copy assignment operator 
 typical implementation of copy assignment is its usual book-keeping steps:
-1) check if it's passed in itself for preventing self-copies, 
-2) clean up the source object's contained resource for preventing resource leaks
-and then 3) finally copying over the source object's resource.  
-These steps to copy over a source object are a bit noisy to the eyes.
+
+1. check if it's passed in itself for preventing self-copies, 
+2. clean up the source object's contained resource for preventing resource leaks
+and 
+3. finally copying over the source object's resource.  
+
+These steps to copy over a source object are a bit tedious.  Is there another
+way?
 
 ### Problem
 
-Perhaps we can do better with a copy-and-swap idiom for reducing this noise? 
+Perhaps we can simplying the copy assignment by using a copy-and-swap pattern?
 I gave this a try and immediately received a 'ambiguous overload' compiler error.
 The problem is this- the copy assignment's and move assignment's signatures are usually
 this:
@@ -146,24 +152,57 @@ end of test
 
 ## Discussion
 
-*** Update in progress ***
+What did the use of swap-and-copy accomplish for the copy assignment and 
+move assignment operations?  It
 
-1. Resource leaks?  Show valgrind output.
-2. Less repetitive code.  Fewer steps with CAS.
+1. reduces code redundancy, reuses the same code for both copy and move assignments
+2. simplifies the tiresome book-keeping assignment steps into one CAS step
 
- 
-    //      this fails compiling with a ambigious overload for
-    //      operator=, because rvalue fits for both the copy assignment
-    //      operator and the move assignment.
-    // }
-    //
-    // Thing& operator=(Thing);   // Lead to ambiguous call
-    // Thing& operator=(Thing&&); // Lead to ambiguous call
-    //
-    //  to fix- do this:
-    //  Thing& operator=(Thing);
-    //
-    //  or
-    //  Thing& operator=(const Thing&);
-    //  Thing& operator=(Thing&&);
+### Code Details
+
+The standard copy assignment and move assignment method signatures look like 
+this:
+    
+    Thing& operator=(const Thing&); // copy assignment
+    Thing& operator=(Thing&&);      // move assignment
+
+When we replace the copy assignment with a copy-and-swap implementation, these
+signatures look like this:
+
+    Thing& operator=(Thing);        // lead to ambiguous call
+    Thing& operator=(Thing&&);      // lead to ambiguous call
+
+The compiler immediately complains because an rvalue can bind to both methods.
+To fix this problem, we can go back to the original implementation OR ...
+simplify to one CAS-powered assignment which binds to both lvalues and rvalues:
+
+    Thing& operator=(Thing);        
+
+### Resource leaks?
+
+Valgrind did not report any resource leaks with the test code.
+
+Why did the rvalue returned by getValue() not produce an extra copy?
+These lines:
+
+    Thing a('a');       // create a
+    a = get_thing();    // create b and return b, overwriting a
+
+only generated this output:
+
+    ctr_p a
+    ctr_p b
+    copy assignment b
+    dtr a
+    
+Why did on the return of get_thing(), there was no additional copy created?  
+Starting with c++ 17, the compiler is guaranteed to use **return value optimization**
+or RVO.  The compiler decides to allocate space in the stack for the return
+value- and the return value within the function is created in that space for
+return without the need to make an extra copy.  This eliminated one copy.
+
+Then the compiler binded the returned rvalue, a temporary value without a name, 
+to the copy assignment method- which, because of its value type argument, 
+works for both lvalues and rvalues. 
+
 

@@ -287,6 +287,30 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Discussion">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#code-details" class="md-nav__link">
+    <span class="md-ellipsis">
+      Code Details
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#resource-leaks" class="md-nav__link">
+    <span class="md-ellipsis">
+      Resource leaks?
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -433,6 +457,30 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Discussion">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#code-details" class="md-nav__link">
+    <span class="md-ellipsis">
+      Code Details
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#resource-leaks" class="md-nav__link">
+    <span class="md-ellipsis">
+      Resource leaks?
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -452,20 +500,25 @@
 
   <h1>Canonical C++ Class With CAS</h1>
 
+<p>Let's discuss the issue in brief.</p>
 <h2 id="canonical-c-class">Canonical C++ Class</h2>
 <p>For a c++ class that manages its own acquired resource (think memory or file 
-handles), the class should contain its own version of ctr, dtr, copy ctr and 
+handles), the class should implement its own version of ctr, dtr, copy ctr and 
 copy assignment.  Since c++ 2010, this list includes move ctr and move 
-assignment.  This is all fine.  </p>
+assignment.  This is all standard best practices.</p>
 <h3 id="noisy-copy-assignment">Noisy copy assignment</h3>
 <p>One slight annoyance I noticed is that the the copy assignment operator 
-typical implementation of copy assignment is its usual book-keeping steps:
-1) check if it's passed in itself for preventing self-copies, 
-2) clean up the source object's contained resource for preventing resource leaks
-and then 3) finally copying over the source object's resource.<br />
-These steps to copy over a source object are a bit noisy to the eyes.</p>
+typical implementation of copy assignment is its usual book-keeping steps:</p>
+<ol>
+<li>check if it's passed in itself for preventing self-copies, </li>
+<li>clean up the source object's contained resource for preventing resource leaks
+and </li>
+<li>finally copying over the source object's resource.  </li>
+</ol>
+<p>These steps to copy over a source object are a bit tedious.  Is there another
+way?</p>
 <h3 id="problem">Problem</h3>
-<p>Perhaps we can do better with a copy-and-swap idiom for reducing this noise? 
+<p>Perhaps we can simplying the copy assignment by using a copy-and-swap pattern?
 I gave this a try and immediately received a 'ambiguous overload' compiler error.
 The problem is this- the copy assignment's and move assignment's signatures are usually
 this:</p>
@@ -573,27 +626,49 @@ end of test
  dtr c
 </code></pre></div>
 <h2 id="discussion">Discussion</h2>
-<p>*** Update in progress ***</p>
+<p>What did the use of swap-and-copy accomplish for the copy assignment and 
+move assignment operations?  It</p>
 <ol>
-<li>Resource leaks?  Show valgrind output.</li>
-<li>
-<p>Less repetitive code.  Fewer steps with CAS.</p>
-<p>//      this fails compiling with a ambigious overload for
-//      operator=, because rvalue fits for both the copy assignment
-//      operator and the move assignment.
-// }
-//
-// Thing&amp; operator=(Thing);   // Lead to ambiguous call
-// Thing&amp; operator=(Thing&amp;&amp;); // Lead to ambiguous call
-//
-//  to fix- do this:
-//  Thing&amp; operator=(Thing);
-//
-//  or
-//  Thing&amp; operator=(const Thing&amp;);
-//  Thing&amp; operator=(Thing&amp;&amp;);</p>
-</li>
+<li>reduces code redundancy, reuses the same code for both copy and move assignments</li>
+<li>simplifies the tiresome book-keeping assignment steps into one CAS step</li>
 </ol>
+<h3 id="code-details">Code Details</h3>
+<p>The standard copy assignment and move assignment method signatures look like 
+this:</p>
+<div class="highlight" style="background: #ffffff"><pre style="line-height: 125%;"><span></span><code>Thing&amp; operator=(const Thing&amp;); // copy assignment
+Thing&amp; operator=(Thing&amp;&amp;);      // move assignment
+</code></pre></div>
+<p>When we replace the copy assignment with a copy-and-swap implementation, these
+signatures look like this:</p>
+<div class="highlight" style="background: #ffffff"><pre style="line-height: 125%;"><span></span><code>Thing&amp; operator=(Thing);        // lead to ambiguous call
+Thing&amp; operator=(Thing&amp;&amp;);      // lead to ambiguous call
+</code></pre></div>
+<p>The compiler immediately complains because an rvalue can bind to both methods.
+To fix this problem, we can go back to the original implementation OR ...
+simplify to one CAS-powered assignment which binds to both lvalues and rvalues:</p>
+<div class="highlight" style="background: #ffffff"><pre style="line-height: 125%;"><span></span><code>Thing&amp; operator=(Thing);
+</code></pre></div>
+<h3 id="resource-leaks">Resource leaks?</h3>
+<p>Valgrind did not report any resource leaks with the test code.</p>
+<p>Why did the rvalue returned by getValue() not produce an extra copy?
+These lines:</p>
+<div class="highlight" style="background: #ffffff"><pre style="line-height: 125%;"><span></span><code>Thing a(&#39;a&#39;);       // create a
+a = get_thing();    // create b and return b, overwriting a
+</code></pre></div>
+<p>only generated this output:</p>
+<div class="highlight" style="background: #ffffff"><pre style="line-height: 125%;"><span></span><code>ctr_p a
+ctr_p b
+copy assignment b
+dtr a
+</code></pre></div>
+<p>Why did on the return of get_thing(), there was no additional copy created?<br />
+Starting with c++ 17, the compiler is guaranteed to use <strong>return value optimization</strong>
+or RVO.  The compiler decides to allocate space in the stack for the return
+value- and the return value within the function is created in that space for
+return without the need to make an extra copy.  This eliminated one copy.</p>
+<p>Then the compiler binded the returned rvalue, a temporary value without a name, 
+to the copy assignment method- which, because of its value type argument, 
+works for both lvalues and rvalues. </p>
 
 
 
