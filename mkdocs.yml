@@ -1,9 +1,12 @@
-site_name: Code
+site_name: ThinkNotes
 theme:
   name: material
   palette:
-    primary: blue grey
+    primary: green
     accent: yellow
+    scheme: slate
+    toggle:
+      icon: material/brightness-4
   font: 
     text: IBM Plex Serif
     code: Roboto Mono, 10
